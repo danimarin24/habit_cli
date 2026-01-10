@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use chrono::{NaiveDate, Local};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
 enum FrequencyHabit {
@@ -19,6 +20,16 @@ impl FrequencyHabit {
     }
 }
 
+impl fmt::Display for FrequencyHabit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = match self {
+            Self::Daily => "daily",
+            Self::Weekly => "weekly",
+            Self::Monthly => "monthly",
+        };
+        write!(f, "{}", text)
+    }
+}
 
 #[derive(Debug)]
 struct Habit {
@@ -43,36 +54,17 @@ fn main() {
 
     loop {
         match choice_option() {
-            Some(MenuOption::Help) => {
-                show_help();
-            }
-            Some(MenuOption::AddHabit) => {
-                println!("Adding Habit");
-                add_habit(&mut habits);
-            }
-            Some(MenuOption::RemoveHabit) => {
-                println!("Removing habit");
-                remove_habit(&mut habits);
-            }
-            Some(MenuOption::CheckHabit) => {
-                println!("Checking habit");
-                check_habit(&mut habits);
-            }
-            Some(MenuOption::HistoryHabit) => {
-                println!("Showing habit history");
-                show_history(&habits);
-            }
-            Some(MenuOption::ListHabits) => {
-                println!("Listing habits");
-                list_habits(&habits);
-            }
+            Some(MenuOption::Help) => show_help(),
+            Some(MenuOption::AddHabit) => add_habit(&mut habits),
+            Some(MenuOption::RemoveHabit) => remove_habit(&mut habits),
+            Some(MenuOption::CheckHabit) => check_habit(&mut habits),
+            Some(MenuOption::HistoryHabit) => show_history(&habits),
+            Some(MenuOption::ListHabits) => list_habits(&habits),
             Some(MenuOption::Exit) => {
-                println!("Exiting...");
+                println!("Bye.");
                 break;
             }
-            None => {
-                println!("Invalid option. Type 'help'.");
-            }
+            None => println!("ERR: Invalid option. Type 'help'."),
         }
     }
 }
@@ -82,16 +74,16 @@ fn show_help() {
     println!("\t$ habit [COMMAND]");
     println!("COMMANDS");
     println!("\thelp\t\tShow this help.");
-    println!("\tadd\t\tTo create new habit.");
-    println!("\tremove\t\tTo remove one habit.");
-    println!("\tcheck\t\tTo check habit.");
+    println!("\tadd\t\tCreate a new habit.");
+    println!("\tremove\t\tRemove one habit by id.");
+    println!("\tcheck\t\tMark a habit as completed for a date.");
     println!("\thistory\t\tShow habit completion history.");
-    println!("\tlist\t\tTo list all habits.");
+    println!("\tlist\t\tList all habits.");
     println!("\texit\t\tExit program.");
 }
 
 fn choice_option() -> Option<MenuOption> {
-    let input = read_line();
+    let input = cmd_prompt();
     match input.as_str() {
         "help" => Some(MenuOption::Help),
         "add" => Some(MenuOption::AddHabit),
@@ -104,10 +96,10 @@ fn choice_option() -> Option<MenuOption> {
     }
 }
 
-fn read_line() -> String {
+fn read_line(prompt: &str) -> String {
     let mut input = String::new();
 
-    print!("> ");
+    print!("{}", prompt);
     let _ = io::stdout().flush();
 
     io::stdin()
@@ -117,7 +109,14 @@ fn read_line() -> String {
     input.trim().to_string()
 }
 
-// Habit
+fn cmd_prompt() -> String {
+    read_line("> ")
+}
+
+fn ask(prompt: &str) -> String {
+    read_line(&format!("{} ", prompt))
+}
+
 fn make_id(name: &str) -> String {
     let mut result = String::new();
     let mut last_was_dash = false;
@@ -146,101 +145,99 @@ fn make_id(name: &str) -> String {
     result.trim_matches('-').to_string()
 }
 
-
 fn add_habit(habits: &mut Vec<Habit>) {
-    println!("Habit name?");
-    let name = read_line();
+    let name = ask("Habit name?");
 
     if name.is_empty() {
-        println!("Habit name cannot be empty.");
+        println!("ERR: Habit name cannot be empty.");
         return;
-    }    
+    }
 
     let id = make_id(&name);
 
     if id.is_empty() {
-        println!("Habit name produced an empty id. Use letters/numbers.");
+        println!("ERR: Habit name produced an empty id. Use letters/numbers.");
         return;
     }
-    
 
     if habits.iter().any(|h| h.id == id) {
-        println!("Habit already exists.");
+        println!("ERR: Habit already exists (id: {}).", id);
         return;
     }
-    
-    println!("Frequency? (daily / weekly / monthly)");
-    let freq_input = read_line();
+
+    // Keep it simple: ask once, fail if invalid (you can turn this into a retry loop later)
+    let freq_input = ask("Frequency? (daily/weekly/monthly)");
     let frequency = match FrequencyHabit::from_str(&freq_input) {
         Some(f) => f,
         None => {
-            println!("Invalid frequency. Use: daily, weekly or monthly.");
+            println!("ERR: Invalid frequency. Use: daily, weekly or monthly.");
             return;
         }
     };
 
     let completions: Vec<NaiveDate> = Vec::new();
+    habits.push(Habit {
+        id: id.clone(),
+        name: name.clone(),
+        frequency,
+        completions,
+    });
 
-    habits.push(Habit { id, name, frequency, completions });
+    println!("OK: Added [{}] {} ({})", id, name, frequency);
 }
 
 fn remove_habit(habits: &mut Vec<Habit>) {
-    println!("Habit id to remove?");
-    let id = read_line();
+    let id = ask("Habit id to remove?");
 
-    // Find index
     if let Some(index) = habits.iter().position(|h| h.id == id) {
         let removed = habits.remove(index);
-        println!("Removed habit: [{}] {}", removed.id, removed.name);
+        println!("OK: Removed [{}] {}", removed.id, removed.name);
     } else {
-        println!("Habit not found: {}", id);
+        println!("ERR: Habit not found: {}", id);
     }
 }
 
 fn check_habit(habits: &mut [Habit]) {
-    println!("Habit id?");
-    let id = read_line();
+    let id = ask("Habit id?");
 
     let Some(habit) = habits.iter_mut().find(|h| h.id == id) else {
-        println!("Habit not found: {}", id);
+        println!("ERR: Habit not found: {}", id);
         return;
     };
 
-    println!("Date (YYYY-MM-DD)? (empty = today)");
-    let date_str = read_line();
-    
+    let date_str = ask("Date (YYYY-MM-DD)? (empty=today)");
+
     let date = if date_str.is_empty() {
         Local::now().date_naive()
     } else {
         match NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
             Ok(d) => d,
             Err(_) => {
-                println!("Invalid date. Example: 2026-01-10");
+                println!("ERR: Invalid date. Example: 2026-01-10");
                 return;
             }
         }
     };
 
     if habit.completions.contains(&date) {
-        println!("Already checked for {}", date);
+        println!("ERR: Already checked for {}", date.format("%Y-%m-%d"));
         return;
     }
-    
+
     habit.completions.push(date);
-    println!("Checked [{}] {}.", habit.id, habit.name);
+    println!("OK: Checked [{}] {} ({})", habit.id, habit.name, date.format("%Y-%m-%d"));
 }
 
 fn show_history(habits: &[Habit]) {
-    println!("Habit id?");
-    let id = read_line();
+    let id = ask("Habit id?");
 
     let Some(habit) = habits.iter().find(|h| h.id == id) else {
-        println!("Habit not found: {}", id);
+        println!("ERR: Habit not found: {}", id);
         return;
     };
 
     if habit.completions.is_empty() {
-        println!("No completions yet for [{}] {}.", habit.id, habit.name);
+        println!("OK: No completions yet for [{}] {}.", habit.id, habit.name);
         return;
     }
 
@@ -255,13 +252,13 @@ fn show_history(habits: &[Habit]) {
 
 fn list_habits(habits: &[Habit]) {
     if habits.is_empty() {
-        println!("No habits yet. Use 'add'.");
+        println!("OK: No habits yet. Use 'add'.");
         return;
     }
 
     for (i, habit) in habits.iter().enumerate() {
         println!(
-            "{}: [{}] - {} - {:?} - completions={}",
+            "{}: [{}] - {} - {} - completions={}",
             i + 1,
             habit.id,
             habit.name,
