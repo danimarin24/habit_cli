@@ -12,7 +12,8 @@ struct Habit {
     id: String,
     name: String,
     frequency: FrequencyHabit,
-    count: u32,
+    completions: Vec<String>,
+
 }
 
 enum MenuOption {
@@ -110,10 +111,9 @@ fn add_habit(habits: &mut Vec<Habit>) {
 
     // Por ahora, default
     let frequency = FrequencyHabit::Daily;
-    let count: u32 = 0;
+    let completions: Vec<String> = Vec::new();
 
-    let habit_add = Habit { id, name, frequency, count };
-    habits.push(habit_add);
+    habits.push(Habit { id, name, frequency, completions });
 }
 
 fn remove_habit(habits: &mut Vec<Habit>) {
@@ -137,6 +137,13 @@ fn list_habits(habits: &[Habit]) {
     }
 
     for (i, habit) in habits.iter().enumerate() {
-        println!("{}: [{}] - {} - {:?} - count={}", i + 1, habit.id, habit.name, habit.frequency, habit.count);
+        println!(
+            "{}: [{}] - {} - {:?} - completions={}",
+            i + 1,
+            habit.id,
+            habit.name,
+            habit.frequency,
+            habit.completions.len()
+        );
     }
 }
