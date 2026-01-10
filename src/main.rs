@@ -21,6 +21,7 @@ enum MenuOption {
     AddHabit,
     RemoveHabit,
     CheckHabit,
+    HistoryHabit,
     ListHabits,
     Exit,
 }
@@ -45,6 +46,10 @@ fn main() {
                 println!("Checking habit");
                 check_habit(&mut habits);
             }
+            Some(MenuOption::HistoryHabit) => {
+                println!("Showing habit history");
+                show_history(&habits);
+            }
             Some(MenuOption::ListHabits) => {
                 println!("Listing habits");
                 list_habits(&habits);
@@ -68,6 +73,7 @@ fn show_help() {
     println!("\tadd\t\tTo create new habit.");
     println!("\tremove\t\tTo remove one habit.");
     println!("\tcheck\t\tTo check habit.");
+    println!("\thistory\t\tShow habit completion history.");
     println!("\tlist\t\tTo list all habits.");
     println!("\texit\t\tExit program.");
 }
@@ -79,6 +85,7 @@ fn choice_option() -> Option<MenuOption> {
         "add" => Some(MenuOption::AddHabit),
         "remove" => Some(MenuOption::RemoveHabit),
         "check" => Some(MenuOption::CheckHabit),
+        "history" => Some(MenuOption::HistoryHabit),
         "list" => Some(MenuOption::ListHabits),
         "exit" | "quit" => Some(MenuOption::Exit),
         _ => None,
@@ -203,7 +210,28 @@ fn check_habit(habits: &mut [Habit]) {
     println!("Checked [{}] {}.", habit.id, habit.name);
 }
 
+fn show_history(habits: &[Habit]) {
+    println!("Habit id?");
+    let id = read_line();
 
+    let Some(habit) = habits.iter().find(|h| h.id == id) else {
+        println!("Habit not found: {}", id);
+        return;
+    };
+
+    if habit.completions.is_empty() {
+        println!("No completions yet for [{}] {}.", habit.id, habit.name);
+        return;
+    }
+
+    let mut dates = habit.completions.clone();
+    dates.sort();
+
+    println!("History for [{}] {}:", habit.id, habit.name);
+    for d in dates {
+        println!(" - {}", d.format("%Y-%m-%d"));
+    }
+}
 
 fn list_habits(habits: &[Habit]) {
     if habits.is_empty() {
