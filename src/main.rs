@@ -20,6 +20,7 @@ enum MenuOption {
     Help,
     AddHabit,
     RemoveHabit,
+    CheckHabit,
     ListHabits,
     Exit,
 }
@@ -39,6 +40,10 @@ fn main() {
             Some(MenuOption::RemoveHabit) => {
                 println!("Removing habit");
                 remove_habit(&mut habits);
+            }
+            Some(MenuOption::CheckHabit) => {
+                println!("Checking habit");
+                check_habit(&mut habits);
             }
             Some(MenuOption::ListHabits) => {
                 println!("Listing habits");
@@ -61,8 +66,9 @@ fn show_help() {
     println!("COMMANDS");
     println!("\thelp\t\tShow this help.");
     println!("\tadd\t\tTo create new habit.");
-    println!("\tlist\t\tTo list all habits.");
     println!("\tremove\t\tTo remove one habit.");
+    println!("\tcheck\t\tTo check habit.");
+    println!("\tlist\t\tTo list all habits.");
     println!("\texit\t\tExit program.");
 }
 
@@ -72,6 +78,7 @@ fn choice_option() -> Option<MenuOption> {
         "help" => Some(MenuOption::Help),
         "add" => Some(MenuOption::AddHabit),
         "remove" => Some(MenuOption::RemoveHabit),
+        "check" => Some(MenuOption::CheckHabit),
         "list" => Some(MenuOption::ListHabits),
         "exit" | "quit" => Some(MenuOption::Exit),
         _ => None,
@@ -128,6 +135,33 @@ fn remove_habit(habits: &mut Vec<Habit>) {
         println!("Habit not found: {}", id);
     }
 }
+
+fn check_habit(habits: &mut [Habit]) {
+    println!("Habit id?");
+    let id = read_line();
+
+    let Some(habit) = habits.iter_mut().find(|h| h.id == id) else {
+        println!("Habit not found: {}", id);
+        return;
+    };
+
+    println!("Date (YYYY-MM-DD)?");
+    let date = read_line();
+
+    if date.is_empty() {
+        println!("Date is required for now. Example: 2026-01-10");
+        return;
+    }
+
+    if habit.completions.iter().any(|d| d == &date) {
+        println!("Already checked for {}", date);
+        return;
+    }
+
+    habit.completions.push(date);
+    println!("Checked [{}] {}.", habit.id, habit.name);
+}
+
 
 
 fn list_habits(habits: &[Habit]) {
