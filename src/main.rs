@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Local};
 
 #[derive(Debug, Clone, Copy)]
 enum FrequencyHabit {
@@ -168,14 +168,18 @@ fn check_habit(habits: &mut [Habit]) {
         return;
     };
 
-    println!("Date (YYYY-MM-DD)?");
+    println!("Date (YYYY-MM-DD)? (empty = today)");
     let date_str = read_line();
-
-    let date = match NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(_) => {
-            println!("Invalid date. Example: 2026-01-10");
-            return;
+    
+    let date = if date_str.is_empty() {
+        Local::now().date_naive()
+    } else {
+        match NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
+            Ok(d) => d,
+            Err(_) => {
+                println!("Invalid date. Example: 2026-01-10");
+                return;
+            }
         }
     };
 
