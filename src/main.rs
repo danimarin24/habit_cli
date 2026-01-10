@@ -225,6 +225,9 @@ fn check_habit(habits: &mut [Habit]) {
     }
 
     habit.completions.push(date);
+    habit.completions.sort();
+    habit.completions.dedup();
+
     println!("OK: Checked [{}] {} ({})", habit.id, habit.name, date.format("%Y-%m-%d"));
 }
 
