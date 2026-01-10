@@ -4,8 +4,8 @@ TODO: Create a CLI for tracking habits.
 
 ## Features
 
-- [ ] Add a habit
-- [ ] Remove a habit
+- [x] Add a habit
+- [x] Remove a habit
 - [x] List all habits
 - [ ] Track habit completion
 - [ ] View habit history
