@@ -100,10 +100,33 @@ fn read_line() -> String {
 
 // Habit
 fn make_id(name: &str) -> String {
-    name
-        .to_lowercase()
-        .replace(' ', "-")
+    let mut result = String::new();
+    let mut last_was_dash = false;
+
+    for c in name.to_lowercase().chars() {
+        let normalized = match c {
+            'á' | 'à' | 'ä' | 'â' => 'a',
+            'é' | 'è' | 'ë' | 'ê' => 'e',
+            'í' | 'ì' | 'ï' | 'î' => 'i',
+            'ó' | 'ò' | 'ö' | 'ô' => 'o',
+            'ú' | 'ù' | 'ü' | 'û' => 'u',
+            'ñ' => 'n',
+            'ç' => 'c',
+            _ => c,
+        };
+
+        if normalized.is_ascii_alphanumeric() {
+            result.push(normalized);
+            last_was_dash = false;
+        } else if !last_was_dash {
+            result.push('-');
+            last_was_dash = true;
+        }
+    }
+
+    result.trim_matches('-').to_string()
 }
+
 
 fn add_habit(habits: &mut Vec<Habit>) {
     println!("Habit name?");
