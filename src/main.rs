@@ -9,6 +9,7 @@ enum FrequencyHabit {
 
 #[derive(Debug)]
 struct Habit {
+    id: String,
     name: String,
     frequency: FrequencyHabit,
     count: u32,
@@ -89,15 +90,28 @@ fn read_line() -> String {
 }
 
 // Habit
+fn make_id(name: &str) -> String {
+    name
+        .to_lowercase()
+        .replace(' ', "-")
+}
+
 fn add_habit(habits: &mut Vec<Habit>) {
     println!("Habit name?");
     let name = read_line();
+
+    let id = make_id(&name);
+
+    if habits.iter().any(|h| h.id == id) {
+        println!("Habit already exists.");
+        return;
+    }
 
     // Por ahora, default
     let frequency = FrequencyHabit::Daily;
     let count: u32 = 0;
 
-    let habit_add = Habit { name, frequency, count };
+    let habit_add = Habit { id, name, frequency, count };
     habits.push(habit_add);
 }
 
@@ -108,6 +122,6 @@ fn list_habits(habits: &[Habit]) {
     }
 
     for (i, habit) in habits.iter().enumerate() {
-        println!("{}. {} - {:?} - count={}", i + 1, habit.name, habit.frequency, habit.count);
+        println!("{}: [{}] - {} - {:?} - count={}", i + 1, habit.id, habit.name, habit.frequency, habit.count);
     }
 }
