@@ -8,6 +8,18 @@ enum FrequencyHabit {
     Monthly,
 }
 
+impl FrequencyHabit {
+    fn from_str(input: &str) -> Option<Self> {
+        match input.to_lowercase().as_str() {
+            "daily" => Some(Self::Daily),
+            "weekly" => Some(Self::Weekly),
+            "monthly" => Some(Self::Monthly),
+            _ => None,
+        }
+    }
+}
+
+
 #[derive(Debug)]
 struct Habit {
     id: String,
@@ -156,9 +168,17 @@ fn add_habit(habits: &mut Vec<Habit>) {
         println!("Habit already exists.");
         return;
     }
+    
+    println!("Frequency? (daily / weekly / monthly)");
+    let freq_input = read_line();
+    let frequency = match FrequencyHabit::from_str(&freq_input) {
+        Some(f) => f,
+        None => {
+            println!("Invalid frequency. Use: daily, weekly or monthly.");
+            return;
+        }
+    };
 
-    // Por ahora, default
-    let frequency = FrequencyHabit::Daily;
     let completions: Vec<NaiveDate> = Vec::new();
 
     habits.push(Habit { id, name, frequency, completions });
