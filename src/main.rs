@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use chrono::NaiveDate;
 
 #[derive(Debug, Clone, Copy)]
 enum FrequencyHabit {
@@ -12,8 +13,7 @@ struct Habit {
     id: String,
     name: String,
     frequency: FrequencyHabit,
-    completions: Vec<String>,
-
+    completions: Vec<NaiveDate>,
 }
 
 enum MenuOption {
@@ -141,7 +141,7 @@ fn add_habit(habits: &mut Vec<Habit>) {
 
     // Por ahora, default
     let frequency = FrequencyHabit::Daily;
-    let completions: Vec<String> = Vec::new();
+    let completions: Vec<NaiveDate> = Vec::new();
 
     habits.push(Habit { id, name, frequency, completions });
 }
@@ -169,18 +169,21 @@ fn check_habit(habits: &mut [Habit]) {
     };
 
     println!("Date (YYYY-MM-DD)?");
-    let date = read_line();
+    let date_str = read_line();
 
-    if date.is_empty() {
-        println!("Date is required for now. Example: 2026-01-10");
-        return;
-    }
+    let date = match NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
+        Ok(d) => d,
+        Err(_) => {
+            println!("Invalid date. Example: 2026-01-10");
+            return;
+        }
+    };
 
-    if habit.completions.iter().any(|d| d == &date) {
+    if habit.completions.contains(&date) {
         println!("Already checked for {}", date);
         return;
     }
-
+    
     habit.completions.push(date);
     println!("Checked [{}] {}.", habit.id, habit.name);
 }
