@@ -37,6 +37,7 @@ fn main() {
             }
             Some(MenuOption::RemoveHabit) => {
                 println!("Removing habit");
+                remove_habit(&mut habits);
             }
             Some(MenuOption::ListHabits) => {
                 println!("Listing habits");
@@ -114,6 +115,20 @@ fn add_habit(habits: &mut Vec<Habit>) {
     let habit_add = Habit { id, name, frequency, count };
     habits.push(habit_add);
 }
+
+fn remove_habit(habits: &mut Vec<Habit>) {
+    println!("Habit id to remove?");
+    let id = read_line();
+
+    // Find index
+    if let Some(index) = habits.iter().position(|h| h.id == id) {
+        let removed = habits.remove(index);
+        println!("Removed habit: [{}] {}", removed.id, removed.name);
+    } else {
+        println!("Habit not found: {}", id);
+    }
+}
+
 
 fn list_habits(habits: &[Habit]) {
     if habits.is_empty() {
