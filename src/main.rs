@@ -132,7 +132,18 @@ fn add_habit(habits: &mut Vec<Habit>) {
     println!("Habit name?");
     let name = read_line();
 
+    if name.is_empty() {
+        println!("Habit name cannot be empty.");
+        return;
+    }    
+
     let id = make_id(&name);
+
+    if id.is_empty() {
+        println!("Habit name produced an empty id. Use letters/numbers.");
+        return;
+    }
+    
 
     if habits.iter().any(|h| h.id == id) {
         println!("Habit already exists.");
