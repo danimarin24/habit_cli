@@ -39,7 +39,7 @@ fn main() {
             }
             Some(MenuOption::ListHabits) => {
                 println!("Listing habits");
-                list_habits(&mut habits);
+                list_habits(&habits);
             }
             Some(MenuOption::Exit) => {
                 println!("Exiting...");
