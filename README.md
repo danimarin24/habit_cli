@@ -9,4 +9,4 @@ TODO: Create a CLI for tracking habits.
 - [x] Check a habit
 - [x] List all habits
 - [x] View habit history
-- [ ] Materialize the data into a json file
+- [x] Materialize the data into a json file

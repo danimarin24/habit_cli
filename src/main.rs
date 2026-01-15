@@ -1,8 +1,11 @@
 use std::io::{self, Write};
 use chrono::{NaiveDate, Local};
 use std::fmt;
+use std::fs;
+use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 enum FrequencyHabit {
     Daily,
     Weekly,
@@ -31,7 +34,7 @@ impl fmt::Display for FrequencyHabit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Habit {
     id: String,
     name: String,
@@ -45,20 +48,31 @@ enum MenuOption {
     RemoveHabit,
     CheckHabit,
     HistoryHabit,
+    StatsHabit,
     ListHabits,
     Exit,
 }
 
 fn main() {
-    let mut habits: Vec<Habit> = Vec::new();
+    let mut habits = load_habits();
 
     loop {
         match choice_option() {
             Some(MenuOption::Help) => show_help(),
-            Some(MenuOption::AddHabit) => add_habit(&mut habits),
-            Some(MenuOption::RemoveHabit) => remove_habit(&mut habits),
-            Some(MenuOption::CheckHabit) => check_habit(&mut habits),
+            Some(MenuOption::AddHabit) => {
+                add_habit(&mut habits);
+                let _ = save_habits(&habits);
+            }
+            Some(MenuOption::RemoveHabit) => {
+                remove_habit(&mut habits);
+                let _ = save_habits(&habits);
+            }
+            Some(MenuOption::CheckHabit) => {
+                check_habit(&mut habits);
+                let _ = save_habits(&habits);
+            }
             Some(MenuOption::HistoryHabit) => show_history(&habits),
+            Some(MenuOption::StatsHabit) => show_stats(&habits),
             Some(MenuOption::ListHabits) => list_habits(&habits),
             Some(MenuOption::Exit) => {
                 println!("Bye.");
@@ -78,6 +92,7 @@ fn show_help() {
     println!("\tremove\t\tRemove one habit by id.");
     println!("\tcheck\t\tMark a habit as completed for a date.");
     println!("\thistory\t\tShow habit completion history.");
+    println!("\tstats\t\tShow habit statistics.");
     println!("\tlist\t\tList all habits.");
     println!("\texit\t\tExit program.");
 }
@@ -90,6 +105,7 @@ fn choice_option() -> Option<MenuOption> {
         "remove" => Some(MenuOption::RemoveHabit),
         "check" => Some(MenuOption::CheckHabit),
         "history" => Some(MenuOption::HistoryHabit),
+        "stats" => Some(MenuOption::StatsHabit),
         "list" => Some(MenuOption::ListHabits),
         "exit" | "quit" => Some(MenuOption::Exit),
         _ => None,
@@ -253,6 +269,47 @@ fn show_history(habits: &[Habit]) {
     }
 }
 
+fn show_stats(habits: &[Habit]) {
+    let id = ask("Habit id?");
+
+    let Some(habit) = habits.iter().find(|h| h.id == id) else {
+        println!("ERR: Habit not found: {}", id);
+        return;
+    };
+
+    let total = habit.completions.len();
+    println!("Stats for [{}] {}:", habit.id, habit.name);
+    println!(" - frequency: {}", habit.frequency);
+    println!(" - total completions: {}", total);
+
+    if total == 0 {
+        println!(" - first completion: -");
+        println!(" - last completion: -");
+        println!(" - current streak: -");
+        return;
+    }
+
+    // completions should already be sorted, but keep it robust:
+    let mut dates = habit.completions.clone();
+    dates.sort();
+    dates.dedup();
+
+    let first = dates.first().unwrap();
+    let last = dates.last().unwrap();
+
+    println!(" - first completion: {}", first.format("%Y-%m-%d"));
+    println!(" - last completion: {}", last.format("%Y-%m-%d"));
+
+    if matches!(habit.frequency, FrequencyHabit::Daily) {
+        let today = Local::now().date_naive();
+        let streak = daily_streak(&dates, today);
+        println!(" - current streak: {} day(s)", streak);
+    } else {
+        println!(" - current streak: -");
+    }
+}
+
+
 fn list_habits(habits: &[Habit]) {
     if habits.is_empty() {
         println!("OK: No habits yet. Use 'add'.");
@@ -269,4 +326,59 @@ fn list_habits(habits: &[Habit]) {
             habit.completions.len()
         );
     }
+}
+
+fn get_data_file_path() -> PathBuf {
+    PathBuf::from(".habits.json")
+}
+
+fn save_habits(habits: &[Habit]) -> Result<(), Box<dyn std::error::Error>> {
+    let path = get_data_file_path();
+    let json = serde_json::to_string_pretty(habits)?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+fn load_habits() -> Vec<Habit> {
+    let path = get_data_file_path();
+
+    if !path.exists() {
+        return Vec::new();
+    }
+
+    match fs::read_to_string(&path) {
+        Ok(content) => {
+            match serde_json::from_str(&content) {
+                Ok(habits) => habits,
+                Err(e) => {
+                    eprintln!("WARN: Failed to parse habits file: {}", e);
+                    Vec::new()
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("WARN: Failed to read habits file: {}", e);
+            Vec::new()
+        }
+    }
+}
+
+fn daily_streak(dates: &[NaiveDate], today: NaiveDate) -> i32 {
+    if dates.is_empty() {
+        return 0;
+    }
+
+    let mut streak = 0;
+    let mut current_date = today;
+
+    for date in dates.iter().rev() {
+        if *date == current_date {
+            streak += 1;
+            current_date = current_date.pred_opt().unwrap_or(current_date);
+        } else if *date < current_date {
+            break;
+        }
+    }
+
+    streak
 }
